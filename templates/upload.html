@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Image Summarizer</title>
+    <style>
+        body {
+            font-family: 'Arial', sans-serif;
+            background-color: #f0f4f8;
+            margin: 0;
+        }
+        
+        /* Navigation Bar Styling */
+        .navbar {
+            background-color: #333;
+            padding: 15px;
+            text-align: center;
+            position: sticky;
+            top: 0;
+            width: 100%;
+            z-index: 100;
+        }
+
+        .navbar h1 {
+            color: white;
+            font-size: 24px;
+            margin: 0;
+            font-family: 'Verdana', sans-serif;
+        }
+
+        .container {
+            background-color: white;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            padding: 30px;
+            border-radius: 8px;
+            text-align: center;
+            width: 100%;
+            max-width: 500px;
+            margin: 20px auto;
+        }
+
+        h1 {
+            color: #333;
+        }
+
+        input[type="file"] {
+            display: none;
+        }
+
+        label {
+            background-color: #4CAF50;
+            color: white;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+
+        label:hover {
+            background-color: #45a049;
+        }
+
+        button {
+            background-color: #008CBA;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+            margin-top: 20px;
+        }
+
+        button:hover {
+            background-color: #007bb5;
+        }
+
+        #summary, #previousSummary {
+            margin-top: 20px;
+            font-size: 18px;
+            color: #555;
+        }
+
+        #uploadedImage, #previousImage {
+            margin-top: 20px;
+            max-width: 100%;
+            border-radius: 8px;
+        }
+
+        .loader {
+            border: 6px solid #f3f3f3;
+            border-radius: 50%;
+            border-top: 6px solid #3498db;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            display: none;
+            margin: 20px auto;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Navigation Bar -->
+    <div class="navbar">
+        <h1>Image Summarizer</h1>
+    </div>
+
+    <div class="container">
+        <h1>Upload an Image</h1>
+        <form id="uploadForm" method="POST" enctype="multipart/form-data" action="/upload">
+            <label for="fileInput">Choose an Image</label>
+            <input type="file" id="fileInput" name="file" accept="image/*">
+            <br>
+            <button type="submit">Upload & Get Summary</button>
+        </form>
+
+        <!-- Loader Animation -->
+        <div class="loader" id="loader"></div>
+
+        <!-- Image Preview -->
+        <img id="uploadedImage" src="" alt="Uploaded Image" style="display:none;">
+
+        <!-- Summary Result -->
+        <div id="summary"></div>
+
+        <!-- Button to Show Previous Image and Summary -->
+        <button id="showPreviousButton">Show Previous Image & Summary</button>
+
+        <!-- Previous Image Preview -->
+        <img id="previousImage" src="" alt="Previous Image" style="display:none;">
+
+        <!-- Previous Summary Result -->
+        <div id="previousSummary"></div>
+    </div>
+
+    <script>
+        const uploadForm = document.getElementById('uploadForm');
+        const fileInput = document.getElementById('fileInput');
+        const summaryDiv = document.getElementById('summary');
+        const loader = document.getElementById('loader');
+        const uploadedImage = document.getElementById('uploadedImage');
+        const showPreviousButton = document.getElementById('showPreviousButton');
+        const previousImage = document.getElementById('previousImage');
+        const previousSummaryDiv = document.getElementById('previousSummary');
+
+        let previousData = null; // Store previous image and summary
+
+        // Upload form submission
+        uploadForm.addEventListener('submit', function(event) {
+            event.preventDefault();
+            const file = fileInput.files[0];
+            if (file) {
+                const formData = new FormData();
+                formData.append('file', file);
+
+                // Show loader
+                loader.style.display = 'block';
+
+                // Fetch request to upload and get summary
+                fetch('/upload', {
+                    method: 'POST',
+                    body: formData
+                })
+                .then(response => response.json())
+                .then(data => {
+                    // Hide loader
+                    loader.style.display = 'none';
+
+                    // Store current image and summary as previous data
+                    if (uploadedImage.src) {
+                        previousData = {
+                            imageUrl: uploadedImage.src,
+                            summary: summaryDiv.innerHTML
+                        };
+                    }
+
+                    // Display uploaded image
+                    const imageUrl = URL.createObjectURL(file);
+                    uploadedImage.src = imageUrl;
+                    uploadedImage.style.display = 'block';
+
+                    // Display summary
+                    summaryDiv.innerHTML = `<strong>Summary:</strong> ${data.summary}`;
+
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    loader.style.display = 'none';
+                    summaryDiv.innerHTML = `<strong>Error:</strong> Failed to get summary.`;
+                });
+            } else {
+                alert('Please select an image.');
+            }
+        });
+
+        // Show previous image and summary
+        showPreviousButton.addEventListener('click', function() {
+            if (previousData) {
+                previousImage.src = previousData.imageUrl;
+                previousImage.style.display = 'block';
+                previousSummaryDiv.innerHTML = previousData.summary;
+            } else {
+                alert('No previous image available.');
+            }
+        });
+    </script>
+</body>
+</html>
